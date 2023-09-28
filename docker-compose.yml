@@ -1,0 +1,10 @@
+version: '3.4'
+
+services:
+  noteapi:
+    image: ${DOCKER_REGISTRY-}noteapi
+    build:
+      context: .
+      dockerfile: NoteApi/Dockerfile
+    ports:
+      - "5001:80"

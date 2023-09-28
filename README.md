@@ -8,11 +8,9 @@ read, edit and delete notes.
 
 ● .Net 7
 
-● PostgreSQL
-
 ● EntityFrameworkCore
 
-● Npgsql
+● InMemoryDb
 
 ● FluentValidation
 

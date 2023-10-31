@@ -8,3 +8,10 @@ services:
       dockerfile: NoteApi/Dockerfile
     ports:
       - "5001:80"
+  authapi:
+    image: ${DOCKER_REGISTRY-}authapi
+    build:
+      context: .
+      dockerfile: AuthApi/Dockerfile
+    ports:
+      - "5002:80"

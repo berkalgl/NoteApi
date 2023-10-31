@@ -1,5 +1,6 @@
 ﻿using FluentValidation;
 using FluentValidation.Results;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using NoteApi.Data;
@@ -14,6 +15,7 @@ namespace NoteApi.V1.Controllers
     [ApiVersion("1.0")]
     [Route("api/v{version:apiVersion}/users/{userId}/notes")]
     [ApiExplorerSettings(GroupName = "User Notes")]
+    [Authorize]
     public class UserNoteV1Controller : Controller
     {
         private readonly NoteDbContext _dbContext;
@@ -31,6 +33,7 @@ namespace NoteApi.V1.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Administrator,Editor")]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ProblemDetails))]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
@@ -54,6 +57,7 @@ namespace NoteApi.V1.Controllers
         }
 
         [HttpGet("{id}")]
+        [Authorize(Roles = "Administrator,Editor,Reader")]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(NoteResponseModel))]
         [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ProblemDetails))]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
@@ -76,6 +80,7 @@ namespace NoteApi.V1.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Administrator")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> Delete([FromRoute] int userId, [FromRoute] int id)
@@ -94,6 +99,7 @@ namespace NoteApi.V1.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize(Roles = "Administrator,Editor")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ProblemDetails))]
         [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ProblemDetails))]
@@ -118,6 +124,7 @@ namespace NoteApi.V1.Controllers
         }
 
         [HttpGet]
+        [Authorize(Roles = "Administrator,Editor,Reader")]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(NoteResponseModel))]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetAll([FromRoute]int userId)

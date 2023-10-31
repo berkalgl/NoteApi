@@ -1,19 +1,25 @@
-using NoteApi.Filters;
+using AuthApi.Configuration;
+using AuthApi.Data;
+using AuthApi.Filters;
+using AuthApi.V1.Models.Requests;
+using AuthApi.V1.Models.Requests.Validators;
+using FluentValidation;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.OpenApi.Models;
-using System.Text.Json;
-using FluentValidation;
-using NoteApi.V1.Models.Requests;
-using NoteApi.V1.Models.Requests.Validators;
-using NoteApi.Data;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using System.Text;
+using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+builder.Services.Configure<SecuritySettings>(builder.Configuration.GetSection("SecuritySettings"));
+SecuritySettings securitySettings = new SecuritySettings();
+builder.Configuration.GetSection("SecuritySettings").Bind(securitySettings);
+
 builder.Services.AddApiVersioning(options => { options.ReportApiVersions = true; });
 
 builder.Services.AddVersionedApiExplorer(options =>
@@ -61,7 +67,7 @@ builder.Services.AddSwaggerGen(c =>
         }
     });
 
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Note API", Version = "v1" });
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Auth API", Version = "v1" });
 
     c.TagActionsBy(api =>
     {
@@ -81,14 +87,10 @@ builder.Services.AddSwaggerGen(c =>
     c.DocInclusionPredicate((_, _) => true);
 });
 
-builder.Services.AddScoped<IValidator<CreateNoteRequestModel>, CreateNoteRequestModelValidator>();
-builder.Services.AddScoped<IValidator<UpdateNoteRequestModel>, UpdateNoteRequestModelValidator>();
+builder.Services.AddScoped<IValidator<LoginRequestModel>, LoginRequestModelValidator>();
+builder.Services.AddScoped<IValidator<UpdateUserRequestModel>, UpdateUserRequestModelValidator>();
 
-builder.Services.AddDbContext<NoteDbContext>(opt => opt.UseInMemoryDatabase(databaseName: "NoteDb"));
-
-string audience = builder.Configuration.GetValue<string>("SecuritySettings:Audience");
-string issuer = builder.Configuration.GetValue<string>("SecuritySettings:Issuer");
-string secret = builder.Configuration.GetValue<string>("SecuritySettings:Secret");
+builder.Services.AddDbContext<UserDbContext>(opt => opt.UseInMemoryDatabase(databaseName: "UserDb"));
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(opt =>
@@ -98,9 +100,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateActor = true,
             ValidateAudience = true,
             ValidateIssuer = true,
-            ValidAudience = audience,
-            ValidIssuer = issuer,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret))
+            ValidAudience = securitySettings.Audience,
+            ValidIssuer = securitySettings.Issuer,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(securitySettings.Secret))
         };
     });
 
@@ -116,6 +118,9 @@ builder.Services.AddCors(option =>
 });
 
 var app = builder.Build();
+
+var dbInstance = app.Services.CreateScope().ServiceProvider.GetRequiredService<UserDbContext>();
+SeedData.Initialize(dbInstance);
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
